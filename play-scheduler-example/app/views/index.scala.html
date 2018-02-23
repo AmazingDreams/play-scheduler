@@ -1,0 +1,29 @@
+@import com.github.amazingdreams.play.scheduler.tasks.TaskInfo
+
+@(tasks: Seq[TaskInfo])
+
+<h1>Tasks (@tasks.size)</h1>
+
+<table cellpadding="5">
+    <tr>
+        <th>Name</th>
+        <th>Enabled</th>
+        <th>Running</th>
+        <th>Last run</th>
+        <th>Last result</th>
+        <th>Next run</th>
+        <th>created</th>
+    </tr>
+
+    @for(task <- tasks) {
+    <tr>
+        <td>@task.taskClass.getName</td>
+        <td>@task.isEnabled</td>
+        <td>@task.isRunning</td>
+        <td>@task.lastRunResult</td>
+        <td>@task.lastRun</td>
+        <td>@task.nextRun()</td>
+        <td>@task.created</td>
+    </tr>
+    }
+</table>

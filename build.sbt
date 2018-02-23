@@ -5,14 +5,14 @@ lazy val commonSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(playScheduler, example)
+  .aggregate(playScheduler)
 
 lazy val playScheduler = (project in file("play-scheduler"))
   .settings(
     commonSettings,
     name := "play-scheduler",
     libraryDependencies ++= Seq(
-      "com.google.inject" % "guice" % "4.1.0",
+      guice,
 
       "org.mockito" % "mockito-core" % "2.15.0" % Test,
       "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
@@ -24,10 +24,14 @@ lazy val playScheduler = (project in file("play-scheduler"))
     PlayLayoutPlugin
   )
 
-lazy val example = (project in file("example"))
+lazy val example = (project in file("play-scheduler-example"))
   .settings(
     commonSettings,
-    name := "play-scheduler-example"
+    name := "play-scheduler-example",
+    libraryDependencies ++= Seq(
+      guice
+    ),
+    PlayKeys.externalizeResources := false
   ).enablePlugins(
     PlayScala
   )
