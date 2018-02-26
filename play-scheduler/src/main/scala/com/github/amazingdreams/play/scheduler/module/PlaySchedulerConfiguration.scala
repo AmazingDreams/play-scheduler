@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 
 import com.github.amazingdreams.play.scheduler.persistence.InMemoryPersistence
 import com.github.amazingdreams.play.scheduler.tasks.{SchedulerTask, TaskInfo}
-import play.api.Configuration
+import play.api.{Configuration, Environment}
 
 import scala.concurrent.duration._
 
@@ -13,7 +13,8 @@ object PlaySchedulerConfiguration {
 }
 
 @Singleton
-class PlaySchedulerConfiguration @Inject()(configuration: Configuration) {
+class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
+                                           environment: Environment) {
   import PlaySchedulerConfiguration._
 
   def isEnabled: Boolean =
@@ -33,7 +34,7 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration) {
   def readTasks(): Seq[TaskInfo] =
     configuration.getPrototypedSeq(s"$BASE_CONFIG_PATH.tasks", s"$BASE_CONFIG_PATH.prototype")
       .map { configEntry =>
-        val clazz = Class.forName(configEntry.get[String]("task"))
+        val clazz = environment.classLoader.loadClass(configEntry.get[String]("task"))
 
         TaskInfo(
           taskClass = clazz.asSubclass(classOf[SchedulerTask]),

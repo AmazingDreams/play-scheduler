@@ -12,7 +12,7 @@ import play.api.Logger
 import play.api.inject.Injector
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 @Singleton
 class PlayScheduler @Inject()(actorSystem: ActorSystem,
@@ -23,28 +23,32 @@ class PlayScheduler @Inject()(actorSystem: ActorSystem,
 
   val logger = Logger(getClass)
   val scheduler = actorSystem.scheduler
+  val configuredTasks = configuration.readTasks()
 
   if (configuration.isEnabled) {
     startup()
   }
 
-  def configuredTasks = configuration.readTasks()
-
   def getTasks(): Future[Seq[TaskInfo]] = persistence.getTasks()
 
   private def startup(): Future[Unit] = {
-    loadAndPersistInitialTasks().map { initialTasks =>
+    Await.result(loadAndPersistInitialTasks().map { initialTasks =>
       // Schedule now
+      Future(scheduleCron())
+    }, 3 seconds)
+  }
+
+  private def cron() = {
+    logger.debug("Starting task run")
+
+    runScheduledTasks().map { ranTasks =>
       scheduleCron()
     }
   }
 
-  private def cron() = {
-    runScheduledTasks()
-    scheduleCron()
-  }
-
   private def scheduleCron(): Cancellable = {
+    logger.debug(s"Scheduling running tasks every ${configuration.schedulerInterval.length} ${configuration.schedulerInterval.unit}")
+
     scheduler.scheduleOnce(configuration.schedulerInterval) {
       cron()
     }
@@ -52,17 +56,30 @@ class PlayScheduler @Inject()(actorSystem: ActorSystem,
 
   private def loadAndPersistInitialTasks(): Future[Seq[TaskInfo]] =
     persistence.getTasks().flatMap { persisted =>
+      logger.debug(s"Found ${persisted.size} persisted tasks")
+      logger.debug(s"Found ${configuredTasks.size} configured tasks")
+
       Future.sequence {
-        TaskMerger.merge(configuredTasks, persisted)
-          .map(persistence.persist)
+        try {
+          TaskMerger.merge(configuredTasks, persisted)
+            .map(persistence.persist)
+        } catch {
+          case e: Throwable =>
+            logger.error("Error during initial task setup", e)
+            throw e
+        }
+      }.map { result =>
+        logger.debug(s"Tasks after merge: ${result.size}")
+        result
       }
     }
 
-  private def runScheduledTasks(): Future[Unit] =
+  private def runScheduledTasks(): Future[Seq[TaskInfo]] =
     persistence.getTasksToBeExecuted().map { tasks =>
       tasks.map { taskInfo =>
         // Run task
         scheduler.scheduleOnce(0 seconds) {
+          logger.debug(s"Running task ${taskInfo.getClass}")
           runTask(taskInfo)
         }
 
@@ -80,19 +97,28 @@ class PlayScheduler @Inject()(actorSystem: ActorSystem,
         try {
           val instance: SchedulerTask = injector.instanceOf(updatedTask.taskClass)
           instance.run().flatMap { result =>
+            logger.debug(s"Running task ${taskInfo.getClass} success!")
+
             persistence.persist(updatedTask.copy(
               isRunning = false,
               lastRunResult = Some(result)
-            ))
+            )).map { finished =>
+              logger.debug(s"Successfully stored result of ${finished.getClass}")
+              finished
+            }
           }
         } catch {
           case e: Throwable =>
-            Logger.error("Fatal error during task execution: ", e)
+            logger.error("Fatal error during task execution: ", e)
+
             persistence.persist(updatedTask.copy(
               isEnabled = false,
               isRunning = false,
               lastRunResult = Some("FATAL ERROR")
-            ))
+            )).map { finished =>
+              logger.debug(s"Successfully stored result of ${finished.getClass}")
+              finished
+            }
         }
     } yield (finishedTask)
 }
