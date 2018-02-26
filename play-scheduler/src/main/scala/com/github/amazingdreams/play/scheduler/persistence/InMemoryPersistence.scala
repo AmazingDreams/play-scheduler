@@ -23,7 +23,9 @@ class InMemoryPersistence @Inject()()(implicit val ec: ExecutionContext) extends
     taskList.synchronized {
       Future {
         taskList.values.filter { taskInfo =>
-          taskInfo.isEnabled && taskInfo.nextRun().isBeforeNow
+          !taskInfo.isRunning &&
+            taskInfo.isEnabled &&
+            taskInfo.nextRun().isBeforeNow
         }.toSeq
       }
     }

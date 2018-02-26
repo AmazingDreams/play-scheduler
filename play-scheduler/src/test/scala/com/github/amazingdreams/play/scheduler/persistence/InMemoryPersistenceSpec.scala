@@ -82,5 +82,23 @@ class InMemoryPersistenceSpec extends PlaySpec {
       tasks.size mustBe 1
       tasks.head mustBe task1
     }
+
+    "not get tasks that are currently running" in {
+      val persistence = new InMemoryPersistence()
+
+      val task1 = TaskInfo(
+        taskClass = classOf[FirstTestingSchedulerClass],
+        interval = 1 minute,
+        initialDelay = 0 second,
+        lastRun = Some(DateTime.now().minusMinutes(2)),
+        isRunning = true
+      )
+
+      await(persistence.persist(task1))
+
+      val tasks = await(persistence.getTasksToBeExecuted())
+
+      tasks.size mustBe 0
+    }
   }
 }

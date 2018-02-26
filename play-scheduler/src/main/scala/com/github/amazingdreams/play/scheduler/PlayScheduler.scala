@@ -52,9 +52,6 @@ class PlayScheduler @Inject()(actorSystem: ActorSystem,
 
   private def loadAndPersistInitialTasks(): Future[Seq[TaskInfo]] =
     persistence.getTasks().flatMap { persisted =>
-      Logger.debug(s"persisted: ${persisted.size}")
-      Logger.debug(s"configured: ${configuredTasks.size}")
-
       Future.sequence {
         TaskMerger.merge(configuredTasks, persisted)
           .map(persistence.persist)
