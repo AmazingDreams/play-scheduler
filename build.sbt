@@ -5,6 +5,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val root = (project in file("."))
+  .settings(skip in publish := true)
   .aggregate(playScheduler)
 
 lazy val playScheduler = (project in file("play-scheduler"))
@@ -17,7 +18,19 @@ lazy val playScheduler = (project in file("play-scheduler"))
       "org.mockito" % "mockito-core" % "2.15.0" % Test,
       "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
     ),
-    PlayKeys.playMonitoredFiles ++= (sourceDirectories in (Compile, TwirlKeys.compileTemplates)).value
+    PlayKeys.playMonitoredFiles ++= (sourceDirectories in (Compile, TwirlKeys.compileTemplates)).value,
+    homepage := Some(url("https://github.com/AmazingDreams/play-scheduler")),
+    scmInfo := Some(ScmInfo(url("https://github.com/AmazingDreams/play-scheduler"),
+                                "git@github.com:AmazingDreams/play-scheduler.git")),
+    licenses += ("MIT", url("https://opensource.org/licenses/MIT")),
+    publishMavenStyle := true,
+
+    publishTo := Some(
+      if (isSnapshot.value)
+        Opts.resolver.sonatypeSnapshots
+      else
+        Opts.resolver.sonatypeStaging
+    )
   ).enablePlugins(
     PlayScala
   ).disablePlugins(
