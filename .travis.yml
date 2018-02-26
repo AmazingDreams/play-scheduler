@@ -1,0 +1,9 @@
+language: scala
+jdk: oraclejdk8
+scala:
+- 2.10.6
+- 2.11.11
+- 2.12.2
+script:
+- sbt -jvm-opts travis/jvmopts.compile compile
+- sbt -jvm-opts travis/jvmopts.test test
