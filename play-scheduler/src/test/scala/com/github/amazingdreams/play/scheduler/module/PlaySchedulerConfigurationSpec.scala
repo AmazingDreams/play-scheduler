@@ -3,7 +3,8 @@ package com.github.amazingdreams.play.scheduler.module
 import com.github.amazingdreams.play.scheduler.tasks.SchedulerTask
 import com.typesafe.config.ConfigFactory
 import org.scalatestplus.play.PlaySpec
-import play.api.Configuration
+import play.api.{Configuration, Environment}
+import play.api.test.Helpers._
 
 import scala.concurrent.duration._
 
@@ -34,7 +35,12 @@ class PlaySchedulerConfigurationSpec extends PlaySpec {
           |}
         """.stripMargin)
 
-      val schedulerConfiguration = new PlaySchedulerConfiguration(Configuration(config))
+      val configuration = Configuration(config)
+
+      val schedulerConfiguration = new PlaySchedulerConfiguration(
+        configuration = configuration,
+        environment = Environment.simple()
+      )
 
       val tasks = schedulerConfiguration.readTasks()
       tasks.size mustBe 2

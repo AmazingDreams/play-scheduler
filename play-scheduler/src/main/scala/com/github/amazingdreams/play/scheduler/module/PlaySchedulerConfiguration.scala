@@ -34,10 +34,12 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
   def readTasks(): Seq[TaskInfo] =
     configuration.getPrototypedSeq(s"$BASE_CONFIG_PATH.tasks", s"$BASE_CONFIG_PATH.prototype")
       .map { configEntry =>
-        val clazz = environment.classLoader.loadClass(configEntry.get[String]("task"))
+        val clazz = environment.classLoader
+          .loadClass(configEntry.get[String]("task"))
+          .asSubclass(classOf[SchedulerTask])
 
         TaskInfo(
-          taskClass = clazz.asSubclass(classOf[SchedulerTask]),
+          taskClass = clazz,
           interval = configEntry.get[FiniteDuration]("interval"),
           initialDelay = configEntry.get[FiniteDuration]("initialDelay"),
           isEnabled = configEntry.get[Boolean]("enabled")
