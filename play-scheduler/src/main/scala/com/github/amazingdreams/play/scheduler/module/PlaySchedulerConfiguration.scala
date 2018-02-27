@@ -32,7 +32,8 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
       }
 
   def readTasks(): Seq[TaskInfo] =
-    configuration.getPrototypedSeq(s"$BASE_CONFIG_PATH.tasks", s"$BASE_CONFIG_PATH.prototype")
+    configurationWithTaskPrototype
+      .getPrototypedSeq(s"$BASE_CONFIG_PATH.tasks", s"$BASE_CONFIG_PATH.prototype")
       .map { configEntry =>
         val clazz = environment.classLoader
           .loadClass(configEntry.get[String]("task"))
@@ -45,4 +46,11 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
           isEnabled = configEntry.get[Boolean]("enabled")
         )
       }
+
+  def configurationWithTaskPrototype: Configuration =
+    configuration ++ Configuration(
+      s"$BASE_CONFIG_PATH.prototype.interval" -> "1 hour",
+      s"$BASE_CONFIG_PATH.prototype.initialDelay" -> "0 seconds",
+      s"$BASE_CONFIG_PATH.prototype.enabled" -> "true"
+    )
 }
