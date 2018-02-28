@@ -1,8 +1,6 @@
 package com.github.amazingdreams.play.scheduler
 
-import javax.inject.{Inject, Singleton}
-
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.{Actor, Cancellable}
 import com.github.amazingdreams.play.scheduler.module.PlaySchedulerConfiguration
 import com.github.amazingdreams.play.scheduler.persistence.PlaySchedulerPersistence
 import com.github.amazingdreams.play.scheduler.tasks.{SchedulerTask, TaskInfo}
@@ -12,56 +10,81 @@ import play.api.Logger
 import play.api.inject.Injector
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class PlayScheduler @Inject()(actorSystem: ActorSystem,
-                              injector: Injector,
-                              configuration: PlaySchedulerConfiguration,
-                              persistence: PlaySchedulerPersistence)
-                             (implicit ec: ExecutionContext) {
+object PlayScheduler {
+  final val ACTOR_NAME = "PlaySchedulerActor"
+  final val PROXY_NAME = "PlaySchedulerProxyActor"
+
+  def Props(injector: Injector,
+            configuration: PlaySchedulerConfiguration,
+            persistence: PlaySchedulerPersistence)
+           (implicit ec: ExecutionContext) =
+    akka.actor.Props(classOf[PlayScheduler], injector, configuration, persistence, ec)
+
+  case object Start
+  case object Stop
+  case object RunTasks
+}
+
+class PlayScheduler(injector: Injector,
+                    configuration: PlaySchedulerConfiguration,
+                    persistence: PlaySchedulerPersistence)
+                   (implicit ec: ExecutionContext)
+  extends Actor {
+  import PlayScheduler._
 
   val logger = Logger(getClass)
-  val scheduler = actorSystem.scheduler
-  val configuredTasks = configuration.readTasks()
+  val scheduler = context.system.scheduler
 
-  if (configuration.isEnabled) {
-    startup()
+  var cancellable: Cancellable = null
+
+  override def preStart(): Unit =
+    self ! Start
+
+  override def receive: Receive = {
+    case Start =>
+      logger.debug("Received Start message")
+
+      loadAndPersistInitialTasks().map { initialTasks =>
+        // Schedule now
+        cancellable = scheduleCron()
+      }
+    case Stop =>
+      logger.debug("Received Stop message")
+
+      if (cancellable != null) {
+        cancellable.cancel()
+      }
+    case RunTasks =>
+      logger.debug("Received RunTasks message")
+
+      runScheduledTasks().map { ranTasks =>
+         cancellable = scheduleCron()
+      }
   }
 
-  def getTasks(): Future[Seq[TaskInfo]] = persistence.getTasks()
-
-  private def startup(): Future[Unit] = {
-    Await.result(loadAndPersistInitialTasks().map { initialTasks =>
-      // Schedule now
-      Future(scheduleCron())
-    }, 3 seconds)
-  }
-
-  private def cron() = {
-    logger.debug("Starting task run")
-
-    runScheduledTasks().map { ranTasks =>
-      scheduleCron()
-    }
-  }
+  def configuredTasks() = configuration.readTasks()
+  def persistedTasks() = persistence.getTasks()
 
   private def scheduleCron(): Cancellable = {
     logger.debug(s"Scheduling running tasks every ${configuration.schedulerInterval.length} ${configuration.schedulerInterval.unit}")
 
     scheduler.scheduleOnce(configuration.schedulerInterval) {
-      cron()
+      self ! RunTasks
     }
   }
 
-  private def loadAndPersistInitialTasks(): Future[Seq[TaskInfo]] =
-    persistence.getTasks().flatMap { persisted =>
+  private def loadAndPersistInitialTasks(): Future[Seq[TaskInfo]] = {
+    val configured = configuredTasks()
+    logger.debug(s"Found ${configured.size} configured tasks")
+
+    persistedTasks().flatMap { persisted =>
       logger.debug(s"Found ${persisted.size} persisted tasks")
-      logger.debug(s"Found ${configuredTasks.size} configured tasks")
 
       Future.sequence {
         try {
-          TaskMerger.merge(configuredTasks, persisted)
+          TaskMerger.merge(configured, persisted)
             .map(persistence.persist)
         } catch {
           case e: Throwable =>
@@ -73,6 +96,7 @@ class PlayScheduler @Inject()(actorSystem: ActorSystem,
         result
       }
     }
+  }
 
   private def runScheduledTasks(): Future[Seq[TaskInfo]] =
     persistence.getTasksToBeExecuted().map { tasks =>

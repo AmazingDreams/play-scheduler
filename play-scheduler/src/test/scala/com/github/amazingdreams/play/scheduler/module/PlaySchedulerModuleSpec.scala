@@ -2,19 +2,12 @@ package com.github.amazingdreams.play.scheduler.module
 
 import com.github.amazingdreams.play.scheduler.PlayScheduler
 import com.github.amazingdreams.play.scheduler.persistence.{InMemoryPersistence, PlaySchedulerPersistence}
-import com.github.amazingdreams.play.scheduler.tasks.TaskInfo
 import com.typesafe.config.ConfigFactory
 import org.scalatestplus.play.PlaySpec
 import play.api.Configuration
 import play.api.inject.guice.GuiceApplicationBuilder
 
-import scala.concurrent.Future
-
-class TestingPersistence extends PlaySchedulerPersistence {
-  override def getTasks(): Future[Seq[TaskInfo]] = ???
-  override def getTasksToBeExecuted(): Future[Seq[TaskInfo]] = ???
-  override def persist(taskInfo: TaskInfo): Future[TaskInfo] = ???
-}
+import scala.concurrent.ExecutionContext
 
 class PlaySchedulerModuleSpec extends PlaySpec {
 
@@ -30,7 +23,9 @@ class PlaySchedulerModuleSpec extends PlaySpec {
 
   "PlaySchedulerModule" should {
     "load properly" in new IntegrationTestSetup {
-      val scheduler = app.injector.instanceOf[PlayScheduler]
+      implicit val ec = app.injector.inject[ExecutionContext]
+
+      val scheduler = app.actorSystem.actorSelection(s"user/${PlayScheduler.ACTOR_NAME}")
       val persistence = app.injector.instanceOf[PlaySchedulerPersistence]
 
       scheduler must not be null

@@ -10,6 +10,6 @@ class PlaySchedulerModule extends Module {
   override def bindings(environment: Environment,
                         configuration: Configuration): Seq[Binding[_]] = Seq(
     bind[PlaySchedulerPersistence].toProvider[PlaySchedulerPersistenceProvider],
-    bind[PlayScheduler].toSelf.eagerly()
+    bind[PlaySchedulerStarter].toSelf.eagerly()
   )
 }

@@ -4,6 +4,8 @@ lazy val commonSettings = Seq(
   version      := "0.1.0-SNAPSHOT"
 )
 
+lazy val akkaVersion = "2.5.10"
+
 lazy val root = (project in file("."))
   .settings(skip in publish := true)
   .aggregate(playScheduler)
@@ -14,6 +16,11 @@ lazy val playScheduler = (project in file("play-scheduler"))
     name := "play-scheduler",
     libraryDependencies ++= Seq(
       guice,
+
+      // Akka Clustering
+      "com.typesafe.akka" %% "akka-cluster"       % akkaVersion,
+      "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+      "com.typesafe.akka" %% "akka-remote"        % akkaVersion,
 
       "org.mockito" % "mockito-core" % "2.15.0" % Test,
       "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test

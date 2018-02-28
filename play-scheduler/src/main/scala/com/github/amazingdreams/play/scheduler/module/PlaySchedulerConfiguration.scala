@@ -21,6 +21,10 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
     configuration.getOptional[Boolean](s"$BASE_CONFIG_PATH.enabled")
       .getOrElse(true)
 
+  def useAkkaClustering: Boolean =
+    configuration.getOptional[Boolean](s"$BASE_CONFIG_PATH.cluster")
+      .getOrElse(false)
+
   def schedulerInterval: FiniteDuration =
     configuration.getOptional[FiniteDuration](s"$BASE_CONFIG_PATH.interval")
       .getOrElse(10 seconds)
