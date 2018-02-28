@@ -2,11 +2,10 @@ package com.github.amazingdreams.play.scheduler.module
 
 import javax.inject.Inject
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.Cluster
+import akka.actor.ActorSystem
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.github.amazingdreams.play.scheduler.PlayScheduler
-import com.github.amazingdreams.play.scheduler.PlayScheduler.{Start, Stop}
+import com.github.amazingdreams.play.scheduler.PlayScheduler.Stop
 import com.github.amazingdreams.play.scheduler.persistence.PlaySchedulerPersistence
 import play.api.Logger
 import play.api.inject.Injector

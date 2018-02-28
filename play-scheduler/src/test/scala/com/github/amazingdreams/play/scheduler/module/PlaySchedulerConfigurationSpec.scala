@@ -4,7 +4,6 @@ import com.github.amazingdreams.play.scheduler.tasks.SchedulerTask
 import com.typesafe.config.ConfigFactory
 import org.scalatestplus.play.PlaySpec
 import play.api.{Configuration, Environment}
-import play.api.test.Helpers._
 
 import scala.concurrent.duration._
 
