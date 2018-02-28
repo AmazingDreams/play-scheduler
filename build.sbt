@@ -49,7 +49,10 @@ lazy val example = (project in file("play-scheduler-example"))
     commonSettings,
     name := "play-scheduler-example",
     libraryDependencies ++= Seq(
-      guice
+      guice,
+
+      "com.typesafe.play" %% "play-json"      % "2.6.8",
+      "com.typesafe.play" %% "play-json-joda" % "2.6.8"
     ),
     PlayKeys.externalizeResources := false
   ).enablePlugins(

@@ -2,7 +2,7 @@ package com.github.amazingdreams.play.scheduler.module
 
 import javax.inject.{Inject, Singleton}
 
-import com.github.amazingdreams.play.scheduler.persistence.InMemoryPersistence
+import com.github.amazingdreams.play.scheduler.persistence.{InMemoryPersistence, PlaySchedulerPersistence}
 import com.github.amazingdreams.play.scheduler.tasks.{SchedulerTask, TaskInfo}
 import play.api.{Configuration, Environment}
 
@@ -29,11 +29,13 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
     configuration.getOptional[FiniteDuration](s"$BASE_CONFIG_PATH.interval")
       .getOrElse(10 seconds)
 
-  def persistenceClassName: String =
+  def persistenceClass: Class[_ <: PlaySchedulerPersistence] =
     configuration.getOptional[String](s"$BASE_CONFIG_PATH.persistence")
+      .map(environment.classLoader.loadClass)
       .getOrElse {
-        classOf[InMemoryPersistence].getCanonicalName
+        classOf[InMemoryPersistence]
       }
+      .asSubclass(classOf[PlaySchedulerPersistence])
 
   def readTasks(): Seq[TaskInfo] =
     configurationWithTaskPrototype

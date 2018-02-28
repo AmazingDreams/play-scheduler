@@ -1,5 +1,6 @@
 package com.github.amazingdreams.play.scheduler.module
 
+import com.github.amazingdreams.play.scheduler.persistence.InMemoryPersistence
 import com.github.amazingdreams.play.scheduler.tasks.SchedulerTask
 import com.typesafe.config.ConfigFactory
 import org.scalatestplus.play.PlaySpec
@@ -8,17 +9,11 @@ import play.api.{Configuration, Environment}
 import scala.concurrent.duration._
 
 class PlaySchedulerConfigurationSpec extends PlaySpec {
-  "TaskConfiguration" should {
+  "PlaySchedulerConfiguration" should {
     "parse configuration values and return the initial list of tasks" in {
       val config = ConfigFactory.parseString(
         """
           |play.scheduler {
-          |  prototype = {
-          |    interval = 1 hour
-          |    initialDelay = 0 seconds
-          |    enabled = true
-          |  }
-          |
           |  tasks = [
           |    {
           |      task = com.github.amazingdreams.play.scheduler.tasks.SchedulerTask
@@ -40,6 +35,11 @@ class PlaySchedulerConfigurationSpec extends PlaySpec {
         configuration = configuration,
         environment = Environment.simple()
       )
+
+      schedulerConfiguration.isEnabled mustBe true
+      schedulerConfiguration.useAkkaClustering mustBe false
+      schedulerConfiguration.schedulerInterval mustBe (10 seconds)
+      schedulerConfiguration.persistenceClass mustBe classOf[InMemoryPersistence]
 
       val tasks = schedulerConfiguration.readTasks()
       tasks.size mustBe 2

@@ -25,6 +25,7 @@ object PlayScheduler {
   case object Start
   case object Stop
   case object RunTasks
+  case class RunTask(task: TaskInfo)
 }
 
 class PlayScheduler(injector: Injector,
@@ -62,13 +63,19 @@ class PlayScheduler(injector: Injector,
       runScheduledTasks().map { ranTasks =>
          cancellable = scheduleCron()
       }
+    case RunTask(task) =>
+      logger.debug(s"Received RunTask(${task.taskClass}) message")
+
+      runTask(task)
   }
 
   def configuredTasks() = configuration.readTasks()
   def persistedTasks() = persistence.getTasks()
 
   private def scheduleCron(): Cancellable = {
-    logger.debug(s"Scheduling running tasks every ${configuration.schedulerInterval.length} ${configuration.schedulerInterval.unit}")
+    logger.debug(s"Scheduling running tasks every" +
+      s" ${configuration.schedulerInterval.length}" +
+      s" ${configuration.schedulerInterval.unit}")
 
     scheduler.scheduleOnce(configuration.schedulerInterval) {
       self ! RunTasks
@@ -101,11 +108,7 @@ class PlayScheduler(injector: Injector,
   private def runScheduledTasks(): Future[Seq[TaskInfo]] =
     persistence.getTasksToBeExecuted().map { tasks =>
       tasks.map { taskInfo =>
-        // Run task
-        scheduler.scheduleOnce(0 seconds) {
-          logger.debug(s"Running task ${taskInfo.getClass}")
-          runTask(taskInfo)
-        }
+        self ! RunTask(taskInfo)
 
         taskInfo
       }
