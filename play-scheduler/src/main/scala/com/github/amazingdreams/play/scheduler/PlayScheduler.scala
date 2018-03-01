@@ -124,15 +124,12 @@ class PlayScheduler(injector: Injector,
         try {
           val instance: SchedulerTask = injector.instanceOf(updatedTask.taskClass)
           instance.run().flatMap { result =>
-            logger.debug(s"Running task ${taskInfo.getClass} success!")
+            logger.debug(s"Running task ${taskInfo.taskClass} success!")
 
             persistence.persist(updatedTask.copy(
               isRunning = false,
               lastRunResult = Some(result)
-            )).map { finished =>
-              logger.debug(s"Successfully stored result of ${finished.getClass}")
-              finished
-            }
+            ))
           }
         } catch {
           case e: Throwable =>
@@ -143,9 +140,13 @@ class PlayScheduler(injector: Injector,
               isRunning = false,
               lastRunResult = Some("FATAL ERROR")
             )).map { finished =>
-              logger.debug(s"Successfully stored result of ${finished.getClass}")
               finished
             }
         }
-    } yield (finishedTask)
+    } yield {
+      logger.debug(s"Task ${finishedTask.taskClass} exited with: ${finishedTask.lastRunResult}")
+      logger.debug(s"Successfully stored result of ${finishedTask.taskClass}")
+
+      finishedTask
+    }
 }
