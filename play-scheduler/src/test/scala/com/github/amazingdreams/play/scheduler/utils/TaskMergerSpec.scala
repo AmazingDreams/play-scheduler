@@ -32,13 +32,13 @@ class TaskMergerSpec extends PlaySpec {
         TaskInfo(
           taskClass = classOf[FirstSchedulerTask],
           interval = 1 hour,
-          lastRun = Some(now.minusMinutes(30)),
+          lastRunStart = Some(now.minusMinutes(30)),
           created = now.minusDays(3)
         ),
         TaskInfo(
           taskClass = classOf[SecondSchedulerTask],
           interval = 5 hours,
-          lastRun = Some(now.minusMinutes(60)),
+          lastRunStart = Some(now.minusMinutes(60)),
           created = now.minusDays(4)
         )
       )
@@ -49,14 +49,14 @@ class TaskMergerSpec extends PlaySpec {
 
       merged(0).taskClass mustBe classOf[FirstSchedulerTask]
       merged(0).interval mustBe (1 minute)
-      merged(0).lastRun must not be empty
-      merged(0).lastRun mustBe Some(now.minusMinutes(30))
+      merged(0).lastRunStart must not be empty
+      merged(0).lastRunStart mustBe Some(now.minusMinutes(30))
       merged(0).created mustBe now.minusDays(3)
 
       merged(1).taskClass mustBe classOf[SecondSchedulerTask]
       merged(1).interval mustBe (1 hour)
-      merged(1).lastRun must not be empty
-      merged(1).lastRun mustBe Some(now.minusMinutes(60))
+      merged(1).lastRunStart must not be empty
+      merged(1).lastRunStart mustBe Some(now.minusMinutes(60))
       merged(1).created mustBe now.minusDays(4)
     }
 
@@ -76,7 +76,7 @@ class TaskMergerSpec extends PlaySpec {
         TaskInfo(
           taskClass = classOf[FirstSchedulerTask],
           interval = 1 hour,
-          lastRun = Some(now.minusMinutes(30)),
+          lastRunStart = Some(now.minusMinutes(30)),
           created = now.minusDays(3)
         )
       )
@@ -101,13 +101,13 @@ class TaskMergerSpec extends PlaySpec {
         TaskInfo(
           taskClass = classOf[FirstSchedulerTask],
           interval = 1 hour,
-          lastRun = Some(now.minusMinutes(30)),
+          lastRunStart = Some(now.minusMinutes(30)),
           created = now.minusDays(3)
         ),
         TaskInfo(
           taskClass = classOf[SecondSchedulerTask],
           interval = 5 hours,
-          lastRun = Some(now.minusMinutes(60)),
+          lastRunStart = Some(now.minusMinutes(60)),
           created = now.minusDays(4)
         )
       )

@@ -25,7 +25,7 @@ class InMemoryPersistence @Inject()()(implicit val ec: ExecutionContext) extends
         taskList.values.filter { taskInfo =>
           !taskInfo.isRunning &&
             taskInfo.isEnabled &&
-            taskInfo.nextRun().isBeforeNow
+            taskInfo.nextRun.isBeforeNow
         }.toSeq
       }
     }

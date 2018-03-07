@@ -5,6 +5,7 @@ import com.github.amazingdreams.play.scheduler.PlayScheduler.{RunTask, Start, St
 import com.github.amazingdreams.play.scheduler.module.PlaySchedulerConfiguration
 import com.github.amazingdreams.play.scheduler.persistence.InMemoryPersistence
 import com.github.amazingdreams.play.scheduler.tasks.{SchedulerTask, TaskInfo}
+import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
@@ -63,7 +64,9 @@ class PlaySchedulerSpec extends PlaySpec
 
       Thread.sleep(1000)
 
-      await(persistence.getTasks).size mustBe 1
+      val tasks = await(persistence.getTasks)
+      tasks.size mustBe 1
+      tasks(0).nextRun.isAfter(DateTime.now().plusSeconds(5))
     }
 
     "run a task that fails" in new TestSetup {

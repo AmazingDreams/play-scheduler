@@ -4,6 +4,7 @@ import javax.inject.{Inject, Singleton}
 
 import com.github.amazingdreams.play.scheduler.persistence.{InMemoryPersistence, PlaySchedulerPersistence}
 import com.github.amazingdreams.play.scheduler.tasks.{SchedulerTask, TaskInfo}
+import org.joda.time.DateTime
 import play.api.{Configuration, Environment}
 
 import scala.concurrent.duration._
@@ -45,11 +46,14 @@ class PlaySchedulerConfiguration @Inject()(configuration: Configuration,
           .loadClass(configEntry.get[String]("task"))
           .asSubclass(classOf[SchedulerTask])
 
+        val initialDelay = configEntry.get[FiniteDuration]("initialDelay")
+
         TaskInfo(
           taskClass = clazz,
           interval = configEntry.get[FiniteDuration]("interval"),
-          initialDelay = configEntry.get[FiniteDuration]("initialDelay"),
-          isEnabled = configEntry.get[Boolean]("enabled")
+          initialDelay = initialDelay,
+          isEnabled = configEntry.get[Boolean]("enabled"),
+          nextRun = DateTime.now().plusSeconds(initialDelay.toSeconds.toInt)
         )
       }
 

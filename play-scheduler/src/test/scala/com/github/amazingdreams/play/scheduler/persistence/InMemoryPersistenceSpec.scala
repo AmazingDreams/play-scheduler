@@ -33,18 +33,20 @@ class InMemoryPersistenceSpec extends PlaySpec {
       tasks.size mustBe 2
     }
 
-    "get tasks that should be executed based initial delay" in {
+    "get tasks that should be executed based on next run" in {
       val persistence = new InMemoryPersistence()
 
       val task1 = TaskInfo(
         taskClass = classOf[FirstTestingSchedulerClass],
         interval = 1 minute,
-        initialDelay = 0 second
+        initialDelay = 0 second,
+        nextRun = DateTime.now().minusMinutes(1)
       )
       val task2 = TaskInfo(
         taskClass = classOf[SecondTestingSchedulerClass],
         interval = 1 minute,
-        initialDelay = 10 minutes
+        initialDelay = 10 minutes,
+        nextRun = DateTime.now().plusMinutes(1)
       )
 
       await(Future.sequence(Seq(
@@ -57,32 +59,6 @@ class InMemoryPersistenceSpec extends PlaySpec {
       tasks.head mustBe task1
     }
 
-    "get tasks that have existed for a while to be executed based on interval" in {
-      val persistence = new InMemoryPersistence()
-
-      val task1 = TaskInfo(
-        taskClass = classOf[FirstTestingSchedulerClass],
-        interval = 1 minute,
-        initialDelay = 0 second,
-        lastRun = Some(DateTime.now().minusMinutes(2))
-      )
-      val task2 = TaskInfo(
-        taskClass = classOf[SecondTestingSchedulerClass],
-        interval = 1 minute,
-        lastRun = Some(DateTime.now())
-      )
-
-      await(Future.sequence(Seq(
-        persistence.persist(task2),
-        persistence.persist(task1)
-      )))
-
-      val tasks = await(persistence.getTasksToBeExecuted())
-
-      tasks.size mustBe 1
-      tasks.head mustBe task1
-    }
-
     "not get tasks that are currently running" in {
       val persistence = new InMemoryPersistence()
 
@@ -90,7 +66,7 @@ class InMemoryPersistenceSpec extends PlaySpec {
         taskClass = classOf[FirstTestingSchedulerClass],
         interval = 1 minute,
         initialDelay = 0 second,
-        lastRun = Some(DateTime.now().minusMinutes(2)),
+        lastRunStart = Some(DateTime.now().minusMinutes(2)),
         isRunning = true
       )
 

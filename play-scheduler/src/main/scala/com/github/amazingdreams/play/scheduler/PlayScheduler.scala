@@ -114,10 +114,14 @@ class PlayScheduler(injector: Injector,
       }
     }
 
-  private def runTask(taskInfo: TaskInfo): Future[TaskInfo] =
+  private def runTask(taskInfo: TaskInfo): Future[TaskInfo] = {
+    val startTime = DateTime.now()
+
     for {
       updatedTask <- persistence.persist(taskInfo.copy(
-        lastRun = Some(DateTime.now()),
+        lastRunStart = Some(startTime),
+        lastRunEnd = None,
+        nextRun = startTime.plusSeconds(taskInfo.interval.toSeconds.toInt),
         isRunning = true
       ))
       finishedTask <-
@@ -127,8 +131,9 @@ class PlayScheduler(injector: Injector,
             logger.debug(s"Running task ${taskInfo.taskClass} success!")
 
             persistence.persist(updatedTask.copy(
-              isRunning = false,
-              lastRunResult = Some(result)
+              lastRunEnd = Some(DateTime.now()),
+              lastRunResult = Some(result),
+              isRunning = false
             ))
           }
         } catch {
@@ -138,6 +143,7 @@ class PlayScheduler(injector: Injector,
             persistence.persist(updatedTask.copy(
               isEnabled = false,
               isRunning = false,
+              lastRunEnd = Some(DateTime.now()),
               lastRunResult = Some("FATAL ERROR")
             )).map { finished =>
               finished
@@ -149,4 +155,5 @@ class PlayScheduler(injector: Injector,
 
       finishedTask
     }
+  }
 }

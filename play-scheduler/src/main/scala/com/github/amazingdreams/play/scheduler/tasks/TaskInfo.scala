@@ -10,11 +10,7 @@ case class TaskInfo(taskClass: Class[_ <: SchedulerTask],
                     isEnabled: Boolean = true,
                     isRunning: Boolean = false,
                     lastRunResult: Option[String] = None,
-                    lastRun: Option[DateTime] = None,
-                    created: DateTime = DateTime.now()) {
-
-  def nextRun(): DateTime = lastRun match {
-    case Some(lastRun) => lastRun.plusSeconds(interval.toSeconds.toInt)
-    case None => created.plusSeconds(initialDelay.toSeconds.toInt)
-  }
-}
+                    lastRunStart: Option[DateTime] = None,
+                    lastRunEnd: Option[DateTime] = None,
+                    nextRun: DateTime = DateTime.now(),
+                    created: DateTime = DateTime.now())
